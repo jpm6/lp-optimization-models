@@ -1,17 +1,36 @@
-model ModelName
-uses "mmxprs"; !gain access to the Xpress-Optimizer solver
+model problem2
+uses "mmxprs", "mmodbc"; !gain access to the Xpress-Optimizer solver and read in a spreadsheet
 
-!optional parameters section
-parameters
-!  SAMPLEPARAM1="c:\test\"
-!  SAMPLEPARAM2=false
-   PROJECTDIR='' ! for when file is added to project
-end-parameters
-
-!sample declarations section
 declarations
-! ...
-  Objective:linctr
+
+    ! Constants
+    N = 3    ! N different types of trucks
+    Kmax = 7 ! Kmax max age of trucks
+    L = 2    ! L is the Restoration constant
+
+    ! Sets
+    types  = 1..N
+    ages   = 0..Kmax
+    years  = 1..10
+    months = 1..12
+    
+    ! Variables
+    i: array(types)  of mpvar ! type  i
+    k: array(ages)   of mpvar ! age   k
+    t: array(years)  of mpvar ! year  t
+    s: array(months) of mpvar ! month s
+
+    ! Parameters
+    cn: array(types, years) of real ! Cost to buy type i at beginning year t
+    cr: array(types, ages)  of real ! Cost to restore type i at age k
+    co: array(types, ages)  of real ! Cost to operate type i at age k
+
+    cs: array(types, ages)  of real ! Salvage value of type i at age k
+    
+    
+
+    
+
 end-declarations
 
 if PROJECTDIR <> '' then

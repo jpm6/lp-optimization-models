@@ -9,7 +9,7 @@ declarations
     L = 2    ! L is the Restoration constant
 
     ! Sets
-    types  = 1..N    ! type  i
+    types  = 1..3    ! type  i
     years  = 1..10   ! year  t
     months = 1..12   ! month s
     
@@ -77,10 +77,8 @@ status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","I
 
 ! Objective Function
 
-total_cost := sum(i in types)( sum(t in years)( cn(i,t) * n(i,t) 
-    + sum(k in operational_ages)(12 * co(i,t,k) * o(i,t,k))
-    + sum(k in restorable_ages)(cr(i,t,k) * r(i,t,k))
-    - sum(k in salvagable_ages)(cs(i,t,k) * s(i,t,k))  ))
+total_cost := sum(i in types)( sum(t in years)( cn(i,t) * n(i,t)
+	+ sum(ko in operational_ages)(12 * co(i,ko) * o(i,t,ko)) + sum(kr in restorable_ages)(cr(i,kr) * r(i,t,kr)) - sum(ks in salvagable_ages)(cs(i,ks) * s(i,t,ks))  ))
     
 
 ! Contraints

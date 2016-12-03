@@ -27,16 +27,25 @@ declarations
 
     cs: array(types, ages)  of real ! Salvage value of type i at age k
     
-    
+    demand:   array(months, years) of real ! Demand in month s year t
+    capacity: array(types, ages)   of real ! Capacity for type i age k
 
-    
+    limit_o: array(types) of real ! Max number operating each year
+    limit_r: array(types) of real ! Max number restored each year
+
+    status:array({ XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB }) of string
 
 end-declarations
 
-if PROJECTDIR <> '' then
-  setparam('workdir', PROJECTDIR)
-  writeln("Project directory: " + PROJECTDIR)
-end-if
+initializations from "mmodbc.odbc:data/UnitSalvageValue.csv"
+   cs as "[B2:I4]"
+end-initializations 
+
+status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","Infeasible","Unbounded"]
+
+! Objective Function
+
+! Contraints
 
 writeln("Begin running model")
 !...

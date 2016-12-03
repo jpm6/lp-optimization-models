@@ -37,9 +37,38 @@ declarations
 
 end-declarations
 
-initializations from "mmodbc.odbc:UnitSalvageValue.csv"
+initializations from "mmodbc.odbc:UnitCostNewTrucks.xls"
+   cn as "[B2:K4]"
+end-initializations 
+
+initializations from "mmodbc.odbc:UnitCostRestoration.xls"
+   cr as "[B2:I4]"
+end-initializations 
+
+initializations from "mmodbc.odbc:MonthlyOperationalCost.xls"
+   co as "[B2:I4]"
+end-initializations 
+
+initializations from "mmodbc.odbc:UnitSalvageValue.xls"
    cs as "[B2:I4]"
 end-initializations 
+
+initializations from "mmodbc.odbc:MonthlyAvailableBusiness.xls"
+   demand as "[B2:K13]"
+end-initializations 
+
+initializations from "mmodbc.odbc:MonthlyTruckCapacity.xls"
+   demand as "[B2:I4]"
+end-initializations 
+
+initializations from "mmodbc.odbc:OperationalCapacity.xls"
+   demand as "[B2:B4]"
+end-initializations 
+
+initializations from "mmodbc.odbc:AnnualRestorationCapacity.xls"
+   demand as "[B2:B4]"
+end-initializations 
+
 
 status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","Infeasible","Unbounded"]
 

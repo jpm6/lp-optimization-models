@@ -37,7 +37,7 @@ declarations
 
 end-declarations
 
-initializations from "mmodbc.odbc:data/UnitSalvageValue.csv"
+initializations from "mmodbc.odbc:UnitSalvageValue.csv"
    cs as "[B2:I4]"
 end-initializations 
 

@@ -1,0 +1,70 @@
+model dietProblem_general
+uses "mmxprs", "mmodbc"; !gain access to the Xpress-Optimizer solver and read in a spreadsheet
+
+
+declarations
+	
+   !sets of foods and nutrients we are using
+   foods = 1..3 !oatmeal = 1, eggs = 2, milk = 3
+   nutrients = 1..2 ! protein = 1, calcium = 2
+   
+   !variables
+   x: array(foods) of mpvar
+	
+  !parameter name : structure (array in this case) of data type
+   nutrientValue: array(nutrients, foods) of real ! nutrients in each food
+   minNutrientAmt: array(nutrients) of real ! min amount of each nutrient you need
+   servingCost: array(foods) of real !cost of each food
+   maxServings: array(foods) of real ! max servings of each food
+   
+   status:array({ XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB }) of string
+  
+end-declarations
+
+!outside of the declaration section we will put in our project data
+!this can be done with an external data file- for now we will include data in the project file
+!use :: to define the data sets
+
+initializations from "mmodbc.odbc:DietProblem_Cost_Servings.xls"
+	servingCost as "[A1:A4]"
+	maxServings as "[B1:B4]"
+	minNutrientAmt as "[D1:D3]"
+	nutrientValue as "[F1:F7]"
+end-initializations
+
+!comment out the data we hard-coded in before because those are read in from excel above
+!nutrientValue::[4,13,8,2,50,120]
+!minNutrientAmt::[55,400]
+!servingCost::[3,10,8]
+!maxServings::[4,2,5]
+
+
+status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","Infeasible","Unbounded"]
+
+!add in our constraints
+!objective function - sum over all nutrients of servings * cost per serving
+totalCost := sum(j in foods)servingCost(j)*x(j)
+!get all of our nutrients
+forall(i in nutrients)
+	min_requirement(i):=sum(j in foods) nutrientValue(i,j)*x(j) >= minNutrientAmt(i)
+!don't have too many servings of any one food
+forall(j in foods)
+	max_servings(j):= x(j) <= maxServings(j)
+
+writeln("Begin running model")
+minimize(totalCost)
+writeln("End running model")
+
+!write out the model output and solution
+writeln(status(getprobstat))
+writeln("Cost of our diet is ", getobjval)
+writeln("We eat this much oatmeal : ", getsol(x(1)))
+writeln("We eat this much eggs : ", getsol(x(2)))
+writeln("We eat this much milk : ", getsol(x(3)))
+
+!or to do the output generally
+forall(j in foods)
+	writeln("we eat this much of food ", j, " : ", getsol(x(j)))
+
+
+end-model

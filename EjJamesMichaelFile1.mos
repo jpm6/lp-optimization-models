@@ -10,27 +10,28 @@ declarations
 
     ! Sets
     types  = 1..N    ! type  i
-    ages   = 0..Kmax ! age   k
     years  = 1..10   ! year  t
     months = 1..12   ! month s
     
-    restorable_ages = L..Kmax
+    restorable_ages  = 2..7
+    salvagable_ages  = 1..8
+    operational_ages = 0..7
     
     ! Decision Variables
     n: array(types, years) of mpvar ! type i bought in year t 
-    r: array(types, years, ages) of mpvar ! type i & age k restored in year t 
-    o: array(types, years, ages) of mpvar ! type i & age k operating in year t
-    s: array(types, years, ages) of mpvar ! type i & age k salvaged in year t
+    r: array(types, years, restorable_ages) of mpvar ! type i & age k restored in year t 
+    o: array(types, years, operational_ages) of mpvar ! type i & age k operating in year t
+    s: array(types, years, salvagable_ages) of mpvar ! type i & age k salvaged in year t
 
     ! Parameters
     cn: array(types, years) of real ! Cost to buy type i at beginning of year t
     cr: array(types, restorable_ages)  of real ! Cost to restore type i at age k
-    co: array(types, ages)  of real ! Cost to operate type i at age k
+    co: array(types, operational_ages)  of real ! Cost to operate type i at age k
 
-    cs: array(types, ages)  of real ! Salvage value of type i at age k
+    cs: array(types, salvagable_ages)  of real ! Salvage value of type i at age k
     
     demand:   array(months, years) of real ! Demand in month s year t
-    capacity: array(types, ages)   of real ! Capacity for type i age k
+    capacity: array(types, operational_ages)   of real ! Capacity for type i age k
 
     limit_o: array(types) of real ! Max number operating each year
     limit_r: array(types) of real ! Max number restored each year
@@ -76,7 +77,11 @@ status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","I
 
 ! Objective Function
 
-total_cost := sum(i in types)( sum(t in years)( (cn(i,t) * n(i,t)) ))
+total_cost := sum(i in types)( sum(t in years)( cn(i,t) * n(i,t) 
+    + sum(k in operational_ages)(12 * co(i,t,k) * o(i,t,k))
+    + sum(k in restorable_ages)(cr(i,t,k) * r(i,t,k))
+    - sum(k in salvagable_ages)(cs(i,t,k) * s(i,t,k))  ))
+    
 
 ! Contraints
 

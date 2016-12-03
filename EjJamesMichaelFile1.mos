@@ -14,6 +14,8 @@ declarations
     years  = 1..10
     months = 1..12
     
+    restorable_ages = L..Kmax
+    
     ! Variables
     i: array(types)  of mpvar ! type  i
     k: array(ages)   of mpvar ! age   k
@@ -22,7 +24,7 @@ declarations
 
     ! Parameters
     cn: array(types, years) of real ! Cost to buy type i at beginning year t
-    cr: array(types, ages)  of real ! Cost to restore type i at age k
+    cr: array(types, restorable_ages)  of real ! Cost to restore type i at age k
     co: array(types, ages)  of real ! Cost to operate type i at age k
 
     cs: array(types, ages)  of real ! Salvage value of type i at age k
@@ -42,7 +44,7 @@ initializations from "mmodbc.odbc:UnitCostNewTrucks.xls"
 end-initializations 
 
 initializations from "mmodbc.odbc:UnitCostRestoration.xls"
-   cr as "[B2:I4]"
+   cr as "[B2:G4]"
 end-initializations 
 
 initializations from "mmodbc.odbc:MonthlyOperationalCost.xls"
@@ -58,15 +60,15 @@ initializations from "mmodbc.odbc:MonthlyAvailableBusiness.xls"
 end-initializations 
 
 initializations from "mmodbc.odbc:MonthlyTruckCapacity.xls"
-   demand as "[B2:I4]"
+   capacity as "[B2:I4]"
 end-initializations 
 
 initializations from "mmodbc.odbc:OperationalCapacity.xls"
-   demand as "[B2:B4]"
+   limit_o as "[B2:B4]"
 end-initializations 
 
 initializations from "mmodbc.odbc:AnnualRestorationCapacity.xls"
-   demand as "[B2:B4]"
+   limit_r as "[B2:B4]"
 end-initializations 
 
 

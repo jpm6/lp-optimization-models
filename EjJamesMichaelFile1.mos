@@ -9,21 +9,21 @@ declarations
     L = 2    ! L is the Restoration constant
 
     ! Sets
-    types  = 1..N
-    ages   = 0..Kmax
-    years  = 1..10
-    months = 1..12
+    types  = 1..N    ! type  i
+    ages   = 0..Kmax ! age   k
+    years  = 1..10   ! year  t
+    months = 1..12   ! month s
     
     restorable_ages = L..Kmax
     
-    ! Variables
-    i: array(types)  of mpvar ! type  i
-    k: array(ages)   of mpvar ! age   k
-    t: array(years)  of mpvar ! year  t
-    s: array(months) of mpvar ! month s
+    ! Decision Variables
+    n: array(types, years) of mpvar ! type i bought in year t 
+    r: array(types, years, ages) of mpvar ! type i & age k restored in year t 
+    o: array(types, years, ages) of mpvar ! type i & age k operating in year t
+    s: array(types, years, ages) of mpvar ! type i & age k salvaged in year t
 
     ! Parameters
-    cn: array(types, years) of real ! Cost to buy type i at beginning year t
+    cn: array(types, years) of real ! Cost to buy type i at beginning of year t
     cr: array(types, restorable_ages)  of real ! Cost to restore type i at age k
     co: array(types, ages)  of real ! Cost to operate type i at age k
 
@@ -75,6 +75,8 @@ end-initializations
 status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","Infeasible","Unbounded"]
 
 ! Objective Function
+
+total_cost := sum(i in types)( sum(t in years)( (cn(i,t) * n(i,t)) ))
 
 ! Contraints
 

@@ -77,7 +77,11 @@ status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","I
 
 ! Objective Function
 
-total_cost := sum(i in types)( sum(t in years)( cn(i,t) * n(i,t) + sum(k in ages)(12 * co(i,t,k) * o(i,t,k) - cs(i,t,k) * s(i,t,k) )))
+total_cost := sum(i in types)( sum(t in years)( cn(i,t) * n(i,t) 
+    + sum(k in operational_ages)(12 * co(i,t,k) * o(i,t,k))
+    + sum(k in restorable_ages)(cr(i,t,k) * r(i,t,k))
+    - sum(k in salvagable_ages)(cs(i,t,k) * s(i,t,k))  ))
+    
 
 ! Contraints
 

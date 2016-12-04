@@ -21,13 +21,14 @@ declarations
     unsalvageable_ages = 0
     salvagable_ages  = 1..(Kmax + 1)
     operational_ages = 0..(Kmax)
-    all_ages = 0..(Kmax + 1)
+    all_ages = 0..(Kmax + L + 1)
+    all_years = 0..Y
     
     ! Decision Variables
-    n: array(types, years) of mpvar ! type i bought in year t 
-    r: array(types, years, all_ages) of mpvar ! type i & age k restored in year t 
-    o: array(types, years, all_ages) of mpvar ! type i & age k operating in year t
-    s: array(types, years, all_ages) of mpvar ! type i & age k salvaged in year t
+    n: array(types, all_years) of mpvar ! type i bought in year t 
+    r: array(types, all_years, all_ages) of mpvar ! type i & age k restored in year t 
+    o: array(types, all_years, all_ages) of mpvar ! type i & age k operating in year t
+    s: array(types, all_years, all_ages) of mpvar ! type i & age k salvaged in year t
 
     ! Parameters
     cn: array(types, years) of real ! Cost to buy type i at beginning of year t
@@ -85,9 +86,6 @@ status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","I
 total_cost := sum(i in types)( sum(t in years)( cn(i,t) * n(i,t) + sum(ko in operational_ages)(12 * co(i,ko) * o(i,t,ko)) + sum(kr in restorable_ages)(cr(i,kr) * r(i,t,kr)) - sum(ks in salvagable_ages)(cs(i,ks) * s(i,t,ks))  ))
    
 ! Contraints
-forall(i in types, k in operational_ages)
-initial_supply(i,k):= o(i,1,k) = n(i,1)
-
 forall(i in types, t in years)
 maximum_operating_constraint(i,t):= sum(k in operational_ages)(o(i,t,k)) <= limit_o(i)
 
@@ -97,12 +95,50 @@ maximum_restoration_constraint(i,t):= sum(k in restorable_ages)(r(i,t,k)) <= lim
 forall(i in types, t in years, k in unrestorable_ages)
 restoration_constraint_I(i,t,k):= r(i,t,k) = 0
 
-forall(i in types, t in years_prime, k in restorable_ages)
-restoration_constraint_II(i, t, k):= r(i, t, k) <= o(i, t-1, k-1)
+forall(i in types, t in years, k in restorable_ages)
+restoration_constraint_II(i, t, k):= r(i, t, k) <= o(i, t - 1, k - 1)
 
+forall(i in types, t in years)
+maximum_age_constraint(i, t):=s(i,t, Kmax + 1) = o(i, t - 1, Kmax) - r(i,t,Kmax + 1)
+
+forall(i in types, t in years, k in salvagable_ages)
+maximum_salvage_constraint(i, t, k):=s(i, t, k) <= o(i, t - 1, k - 1) - r(i, t, k) + r(i, t, k + L)
+
+forall(i in types, t in years)
+cannot_salvage_new(i, t):=s(i,t,0) = 0
+
+forall(i in types, k in operational_ages)
+initial_supply(i,k):= o(i,0,k) = 0
+
+forall(i in types, t in years, k in 1..Kmax) ! this should be good
+operation_constraint(i, t, k):=o(i, t, k) = o(i, t - 1, k - 1) - r(i, t, k) + r(i, t, k + L) - s(i, t, k)
+
+forall(i in types, t in years) ! this should be good
+new_truck_constraint(i, t):=o(i, t, 0) = n(i,t)
+
+forall(t in years, m in months) !this should be good
+demand_constraint(t, m):=sum(k in operational_ages)(sum(i in types)(o(i, t, k) * capacity(i, k))) >= demand(m,t)
+
+forall(i in types, t in all_years)
+nonnegativity_n(i, t):= n(i, t) >= 0
+
+forall(i in types, t in all_years, k in all_ages)
+nonnegativity_s(i, t, k):= s(i, t, k) >= 0
+
+forall(i in types, t in all_years, k in all_ages)
+nonnegativity_r(i, t, k):= r(i, t, k) >= 0
+
+forall(i in types, t in all_years, k in all_ages)
+nonnegativity_o(i, t, k):= o(i, t, k) >= 0
 
 writeln("Begin running model")
 !...
 writeln("End running model")
+
+minimize(total_cost)
+writeln("Total cost: ", getobjval)
+forall (i in types, t in all_years)
+writeln("Amount to buy ", i, " in year ", t,": ", getsol(n(i,t)))
+
 
 end-model

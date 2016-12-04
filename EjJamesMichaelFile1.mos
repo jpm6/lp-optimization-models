@@ -7,27 +7,32 @@ declarations
     N = 3    ! N different types of trucks
     Kmax = 7 ! Kmax max age of trucks
     L = 2    ! L is the Restoration constant
+    S = 12   ! months in a year
+    Y = 10	 ! Planning horizon
 
     ! Sets
-    types  = 1..3    ! type  i
-    years  = 1..10   ! year  t
-    months = 1..12   ! month s
+    types  = 1..N    ! type  i
+    years  = 1..Y   ! year  t
+    months = 1..S   ! month s
+    years_prime = 2..Y
     
-    restorable_ages  = 2..7
-    salvagable_ages  = 1..8
-    operational_ages = 0..7
+    unrestorable_ages = 0..L
+    restorable_ages  = (L + 1)..(Kmax + 1)
+    unsalvageable_ages = 0
+    salvagable_ages  = 1..(Kmax + 1)
+    operational_ages = 0..(Kmax)
+    all_ages = 0..(Kmax + 1)
     
     ! Decision Variables
     n: array(types, years) of mpvar ! type i bought in year t 
-    r: array(types, years, restorable_ages) of mpvar ! type i & age k restored in year t 
-    o: array(types, years, operational_ages) of mpvar ! type i & age k operating in year t
-    s: array(types, years, salvagable_ages) of mpvar ! type i & age k salvaged in year t
+    r: array(types, years, all_ages) of mpvar ! type i & age k restored in year t 
+    o: array(types, years, all_ages) of mpvar ! type i & age k operating in year t
+    s: array(types, years, all_ages) of mpvar ! type i & age k salvaged in year t
 
     ! Parameters
     cn: array(types, years) of real ! Cost to buy type i at beginning of year t
     cr: array(types, restorable_ages)  of real ! Cost to restore type i at age k
     co: array(types, operational_ages)  of real ! Cost to operate type i at age k
-
     cs: array(types, salvagable_ages)  of real ! Salvage value of type i at age k
     
     demand:   array(months, years) of real ! Demand in month s year t
@@ -77,11 +82,24 @@ status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","I
 
 ! Objective Function
 
-total_cost := sum(i in types)( sum(t in years)( cn(i,t) * n(i,t)
-	+ sum(ko in operational_ages)(12 * co(i,ko) * o(i,t,ko)) + sum(kr in restorable_ages)(cr(i,kr) * r(i,t,kr)) - sum(ks in salvagable_ages)(cs(i,ks) * s(i,t,ks))  ))
-    
-
+total_cost := sum(i in types)( sum(t in years)( cn(i,t) * n(i,t) + sum(ko in operational_ages)(12 * co(i,ko) * o(i,t,ko)) + sum(kr in restorable_ages)(cr(i,kr) * r(i,t,kr)) - sum(ks in salvagable_ages)(cs(i,ks) * s(i,t,ks))  ))
+   
 ! Contraints
+forall(i in types, k in operational_ages)
+initial_supply(i,k):= o(i,1,k) = n(i,1)
+
+forall(i in types, t in years)
+maximum_operating_constraint(i,t):= sum(k in operational_ages)(o(i,t,k)) <= limit_o(i)
+
+forall(i in types, t in years)
+maximum_restoration_constraint(i,t):= sum(k in restorable_ages)(r(i,t,k)) <= limit_r(i)
+
+forall(i in types, t in years, k in unrestorable_ages)
+restoration_constraint_I(i,t,k):= r(i,t,k) = 0
+
+forall(i in types, t in years_prime, k in restorable_ages)
+restoration_constraint_II(i, t, k):= r(i, t, k) <= o(i, t-1, k-1)
+
 
 writeln("Begin running model")
 !...

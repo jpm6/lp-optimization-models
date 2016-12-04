@@ -21,14 +21,15 @@ declarations
     unsalvageable_ages = 0
     salvagable_ages  = 1..(Kmax + 1)
     operational_ages = 0..(Kmax)
+    unoperational_ages = Kmax..(Kmax + L + 1)
     all_ages = 0..(Kmax + L + 1)
     all_years = 0..Y
     
     ! Decision Variables
     n: array(types, all_years) of mpvar ! type i bought in year t 
-    r: array(types, all_years, all_ages) of mpvar ! type i & age k restored in year t 
-    o: array(types, all_years, all_ages) of mpvar ! type i & age k operating in year t
-    s: array(types, all_years, all_ages) of mpvar ! type i & age k salvaged in year t
+    r: array(types, all_years, (0)..(Kmax + L + 1)) of mpvar ! type i & age k restored in year t 
+    o: array(types, all_years, operational_ages) of mpvar ! type i & age k operating in year t
+    s: array(types, all_years, salvagable_ages) of mpvar ! type i & age k salvaged in year t
 
     ! Parameters
     cn: array(types, years) of real ! Cost to buy type i at beginning of year t
@@ -104,9 +105,6 @@ maximum_age_constraint(i, t):=s(i,t, Kmax + 1) = o(i, t - 1, Kmax) - r(i,t,Kmax 
 forall(i in types, t in years, k in salvagable_ages)
 maximum_salvage_constraint(i, t, k):=s(i, t, k) <= o(i, t - 1, k - 1) - r(i, t, k) + r(i, t, k + L)
 
-forall(i in types, t in years)
-cannot_salvage_new(i, t):=s(i,t,0) = 0
-
 forall(i in types, k in operational_ages)
 initial_supply(i,k):= o(i,0,k) = 0
 
@@ -122,13 +120,13 @@ demand_constraint(t, m):=sum(k in operational_ages)(sum(i in types)(o(i, t, k) *
 forall(i in types, t in all_years)
 nonnegativity_n(i, t):= n(i, t) >= 0
 
-forall(i in types, t in all_years, k in all_ages)
+forall(i in types, t in all_years, k in salvagable_ages)
 nonnegativity_s(i, t, k):= s(i, t, k) >= 0
 
-forall(i in types, t in all_years, k in all_ages)
+forall(i in types, t in all_years, k in 1..(Kmax+L+1))
 nonnegativity_r(i, t, k):= r(i, t, k) >= 0
 
-forall(i in types, t in all_years, k in all_ages)
+forall(i in types, t in all_years, k in operational_ages)
 nonnegativity_o(i, t, k):= o(i, t, k) >= 0
 
 writeln("Begin running model")

@@ -1,4 +1,4 @@
-model problem4
+model problem3
 uses "mmxprs", "mmodbc"; !gain access to the Xpress-Optimizer solver and read in a spreadsheet
 
 declarations
@@ -25,6 +25,7 @@ declarations
     
     all_ages = 0..(Kmax + L + 1)
     all_years = 0..Y
+    restorable_years = (L + 1)..(Kmax + L + 1)
     
     ! Decision Variables
     n: array(types, years) of mpvar ! type i bought in year t 
@@ -32,18 +33,14 @@ declarations
     o: array(types, all_years, 0..(Kmax+1)) of mpvar ! type i & age k operating in year t
     s: array(types, years, salvagable_ages) of mpvar ! type i & age k salvaged in year t
 	dm: array(months, years) of mpvar ! demand met in month s year t
-	
+    Sn: array(types, years) of mpvar
+    Sm: array(types, restorable_years) of mpvar
     
     ! Parameters
     cn: array(types, years) of real ! Cost to buy type i at beginning of year t
     cr: array(types, restorable_ages)  of real ! Cost to restore type i at age k
     co: array(types, operational_ages)  of real ! Cost to operate type i at age k
     cs: array(types, salvagable_ages)  of real ! Salvage value of type i at age k
-    Bn: array(types, years) of real ! number needed to purchase of truck i in year t to get bulk discount
-    Dn: array(types, years) of read ! Total amount saved after getting bulk discount for truck i in year t 
-    Bm: array(types, years) of real ! number needed to restore of truck i in year t to get bulk discount 
-    Dm: array(types, years) of real ! Total amount saved after gettting bulk discount for truck i year year t
-    
     
     demand:   array(months, years) of real ! Demand in month s year t
     p:		  array(months, years) of real ! revenue per demand satisfied
@@ -52,6 +49,11 @@ declarations
     limit_o: array(types) of real ! Max number operating each year
     limit_r: array(types) of real ! Max number restored each year
 
+	Bn: array(types, years) of real ! bulk buying requirements
+	Dn: array(types, years) of real ! buying discount amount
+	
+	Bm: array(types, restorable_years) of real ! bulk restoration requirements
+	Dm: array(types, restorable_years) of real ! restoration discount amount	
     status:array({ XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB }) of string
 
 end-declarations
@@ -92,18 +94,19 @@ initializations from "mmodbc.odbc:AnnualRestorationCapacity.xls"
    limit_r as "[B1:B4]"
 end-initializations 
 
-initializations from "mmodbc.obbc:BulkDiscountData.xls" 
-   Bn as "[B3:K5]"
-   Dn as "[B10:K12]"
-   Bm as "[B17:K19]"
-   Dm as "[B24:K26]" 
+initializations from "mmodbc.odbc:BulkDiscountData.xls"
+	Bn as "[B2:K5]"
+	Dn as "[B9:K12]"
+	Bm as "[B16:I19]"
+	Dm as "[B23:I26]"
+end-initializations 
 
 status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB])["Optimum found", "Unfinished","Infeasible","Unbounded"]
 
 ! Objective Function
 
-total_profit := sum(m in months)(sum(t in years)(p(m, t) * dm(m,t))) - (sum(i in types)( sum(t in years)( cn(i,t) * n(i,t) + sum(ko in operational_ages)(12 * co(i,ko) * o(i,t,ko)) + sum(kr in restorable_ages)(cr(i,kr) * r(i,t,kr)) - sum(ks in salvagable_ages)(cs(i,ks) * s(i,t,ks))  )))
-   
+total_profit := sum(m in months)(sum(t in years)(p(m, t) * dm(m,t))) - (sum(i in types)( sum(t in years)( cn(i,t) * n(i,t) + sum(ko in operational_ages)(12 * co(i,ko) * o(i,t,ko)) + sum(kr in restorable_ages)(cr(i,kr) * r(i,t,kr)) - sum(ks in salvagable_ages)(cs(i,ks) * s(i,t,ks))  ))) + (sum(i in types)( sum(t in years)(Sn(i, t) * Dn(i, t)))) + (sum(i in types)( sum(t in restorable_years)(Sm(i, t) * Dm(i, t))))    
+
 ! Contraints
 forall(i in types, t in years)
 maximum_operating_constraint(i,t):= sum(k in operational_ages)(o(i,t,k)) <= limit_o(i)
@@ -145,6 +148,12 @@ forall(t in years, m in months) !this should be good
 demand_constraint_II(t, m):= sum(k in operational_ages)(sum(i in types)(o(i, t, k) * capacity(i, k))) >= dm(m,t)
 
 forall(i in types, t in years)
+binary_ordering_constraint(i, t):= Bn(i, t)*Sn(i, t) <= n(i, t)
+
+forall(i in types, t in restorable_years)
+binary_restoration_constraint(i, t):=  Bm(i, t)*Sm(i, t) <= sum(k in restorable_ages)(r(i,t,k))
+
+forall(i in types, t in years)
 nonnegativity_n(i, t):= n(i, t) >= 0
 
 forall(i in types, t in years, k in salvagable_ages)
@@ -158,6 +167,17 @@ nonnegativity_o(i, t, k):= o(i, t, k) >= 0
 
 forall(m in months, t in years)
 nonnegativity_dm(m, t):= dm(m, t) >= 0
+
+forall(i in types, t in years)
+binary_Sn(i, t):= Sn(i, t) is_binary
+
+
+forall(i in types, t in restorable_years)
+binary_Sm(i, t):= Sm(i, t) is_binary
+
+
+
+
 
 writeln("Begin running model")
 !...

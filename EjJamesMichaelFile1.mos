@@ -143,4 +143,5 @@ writeln("End running model")
 minimize(total_cost)
 writeln("Total cost: ", getobjval)
 
+
 end-model

@@ -14,22 +14,23 @@ declarations
     types  = 1..N    ! type  i
     years  = 1..Y   ! year  t
     months = 1..S   ! month s
-    years_prime = 2..Y
-    
-    unrestorable_ages = 0..L
+
+    unrestorable_ages_I = 0..L
+    unrestorable_ages_II = (Kmax + 2)..(Kmax + L + 1)
     restorable_ages  = (L + 1)..(Kmax + 1)
-    unsalvageable_ages = 0
+    
     salvagable_ages  = 1..(Kmax + 1)
+    
     operational_ages = 0..(Kmax)
-    unoperational_ages = Kmax..(Kmax + L + 1)
+    
     all_ages = 0..(Kmax + L + 1)
     all_years = 0..Y
     
     ! Decision Variables
-    n: array(types, all_years) of mpvar ! type i bought in year t 
-    r: array(types, all_years, (0)..(Kmax + L + 1)) of mpvar ! type i & age k restored in year t 
-    o: array(types, all_years, operational_ages) of mpvar ! type i & age k operating in year t
-    s: array(types, all_years, salvagable_ages) of mpvar ! type i & age k salvaged in year t
+    n: array(types, years) of mpvar ! type i bought in year t 
+    r: array(types, years, (0)..(Kmax + L + 1)) of mpvar ! type i & age k restored in year t 
+    o: array(types, all_years, 0..(Kmax+1)) of mpvar ! type i & age k operating in year t
+    s: array(types, years, salvagable_ages) of mpvar ! type i & age k salvaged in year t
 
     ! Parameters
     cn: array(types, years) of real ! Cost to buy type i at beginning of year t
@@ -48,35 +49,35 @@ declarations
 end-declarations
 
 initializations from "mmodbc.odbc:UnitCostNewTrucks.xls"
-   cn as "[B2:K4]"
+   cn as "[B1:K4]"
 end-initializations 
 
 initializations from "mmodbc.odbc:UnitCostRestoration.xls"
-   cr as "[B2:G4]"
+   cr as "[B1:G4]"
 end-initializations 
 
 initializations from "mmodbc.odbc:MonthlyOperationalCost.xls"
-   co as "[B2:I4]"
+   co as "[B1:I4]"
 end-initializations 
 
 initializations from "mmodbc.odbc:UnitSalvageValue.xls"
-   cs as "[B2:I4]"
+   cs as "[B1:I4]"
 end-initializations 
 
 initializations from "mmodbc.odbc:MonthlyAvailableBusiness.xls"
-   demand as "[B2:K13]"
+   demand as "[B1:K13]"
 end-initializations 
 
 initializations from "mmodbc.odbc:MonthlyTruckCapacity.xls"
-   capacity as "[B2:I4]"
+   capacity as "[B1:I4]"
 end-initializations 
 
 initializations from "mmodbc.odbc:OperationalCapacity.xls"
-   limit_o as "[B2:B4]"
+   limit_o as "[B1:B4]"
 end-initializations 
 
 initializations from "mmodbc.odbc:AnnualRestorationCapacity.xls"
-   limit_r as "[B2:B4]"
+   limit_r as "[B1:B4]"
 end-initializations 
 
 
@@ -93,11 +94,17 @@ maximum_operating_constraint(i,t):= sum(k in operational_ages)(o(i,t,k)) <= limi
 forall(i in types, t in years)
 maximum_restoration_constraint(i,t):= sum(k in restorable_ages)(r(i,t,k)) <= limit_r(i)
 
-forall(i in types, t in years, k in unrestorable_ages)
+forall(i in types, t in years, k in unrestorable_ages_I)
 restoration_constraint_I(i,t,k):= r(i,t,k) = 0
 
+forall(i in types, t in years, k in unrestorable_ages_II)
+restoration_constraint_II(i,t,k):= r(i,t,k) = 0
+
 forall(i in types, t in years, k in restorable_ages)
-restoration_constraint_II(i, t, k):= r(i, t, k) <= o(i, t - 1, k - 1)
+restoration_constraint_III(i, t, k):= r(i, t, k) <= o(i, t - 1, k - 1)
+
+forall(i in types, t in years)
+maximum_age_constraint_II(i, t):= o(i, t, Kmax + 1) = 0
 
 forall(i in types, t in years)
 maximum_age_constraint(i, t):=s(i,t, Kmax + 1) = o(i, t - 1, Kmax) - r(i,t,Kmax + 1)
@@ -117,13 +124,13 @@ new_truck_constraint(i, t):=o(i, t, 0) = n(i,t)
 forall(t in years, m in months) !this should be good
 demand_constraint(t, m):=sum(k in operational_ages)(sum(i in types)(o(i, t, k) * capacity(i, k))) >= demand(m,t)
 
-forall(i in types, t in all_years)
+forall(i in types, t in years)
 nonnegativity_n(i, t):= n(i, t) >= 0
 
-forall(i in types, t in all_years, k in salvagable_ages)
+forall(i in types, t in years, k in salvagable_ages)
 nonnegativity_s(i, t, k):= s(i, t, k) >= 0
 
-forall(i in types, t in all_years, k in 1..(Kmax+L+1))
+forall(i in types, t in years, k in 1..(Kmax+L+1))
 nonnegativity_r(i, t, k):= r(i, t, k) >= 0
 
 forall(i in types, t in all_years, k in operational_ages)
@@ -135,8 +142,6 @@ writeln("End running model")
 
 minimize(total_cost)
 writeln("Total cost: ", getobjval)
-forall (i in types, t in all_years)
-writeln("Amount to buy ", i, " in year ", t,": ", getsol(n(i,t)))
 
 
 end-model

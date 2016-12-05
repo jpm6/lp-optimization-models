@@ -35,7 +35,7 @@ declarations
     cr: array(types, restorable_ages)  of real ! Cost to restore type i at age k
     co: array(types, operational_ages)  of real ! Cost to operate type i at age k
     cs: array(types, salvagable_ages)  of real ! Salvage value of type i at age k
-    p: array(all_months, all_years) of real ! Revenue earned from product delivered in month s of year t
+    p: array(all_months, years) of real ! Revenue earned from product delivered in month s of year t
     
     demand:   array(months, years) of real ! Demand in month s year t
     capacity: array(types, operational_ages)   of real ! Capacity for type i age k
